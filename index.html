@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>随访会话 · 患者端</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+      :root {
+        --red: #e11d2e;
+        --red-light: #fef2f2;
+        --bg: #f5f5f5;
+        --border: #eee;
+        --safe-b: env(safe-area-inset-bottom, 0px);
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+        background: var(--bg);
+        max-width: 430px;
+        margin: 0 auto;
+        height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .topbar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar-title { flex: 1; text-align: center; font-size: 16px; font-weight: 600; }
+      .topbar-btn { width: 36px; height: 36px; border: none; background: none; font-size: 18px; cursor: pointer; }
+      .period-banner {
+        flex-shrink: 0;
+        padding: 8px 14px;
+        background: #eff6ff;
+        border-bottom: 1px solid #bfdbfe;
+        font-size: 11px;
+        color: #1d4ed8;
+        text-align: center;
+      }
+      .followup-reminder-card {
+        margin-top: 12px;
+        background: #fff7ed;
+        border: 1px solid #fdba74;
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .followup-reminder-card-title {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 14px; font-weight: 600; color: #9a3412; margin-bottom: 8px;
+      }
+      .followup-reminder-card-title span { font-size: 18px; }
+      .followup-reminder-card p {
+        font-size: 13px; line-height: 1.65; color: #7c2d12; margin-bottom: 6px;
+      }
+      .followup-reminder-card .highlight { color: #ea580c; font-weight: 600; }
+      .followup-reminder-card ul {
+        margin: 8px 0 10px 18px; font-size: 12px; line-height: 1.6; color: #92400e;
+      }
+      .reminder-confirm-btn {
+        width: 100%; padding: 10px; border: none; border-radius: 8px;
+        background: #ea580c; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+      }
+      .reminder-confirm-btn:active { opacity: 0.9; }
+      .reminder-confirm-btn.done { background: #d1d5db; color: #6b7280; }
+      .chat-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 14px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .bot-row { display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-start; }
+      .bot-avatar {
+        width: 36px; height: 36px; border-radius: 50%; background: var(--red);
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; flex-shrink: 0;
+      }
+      .bot-content { flex: 1; min-width: 0; }
+      .bot-name { font-size: 12px; color: #888; margin-bottom: 6px; }
+      .bot-bubble {
+        background: #fff; border-radius: 12px; padding: 12px 14px;
+        font-size: 14px; line-height: 1.6; color: #333;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      }
+
+      /* 任务卡片 */
+      .task-card {
+        margin-top: 12px;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
+      .task-card-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 14px; border-bottom: 1px solid #f5f5f5;
+      }
+      .task-card-title { font-size: 15px; font-weight: 600; }
+      .task-card-date { font-size: 12px; color: #aaa; }
+      .task-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 14px; border-bottom: 1px solid #f9f9f9; cursor: pointer;
+      }
+      .task-item:last-child { border-bottom: none; }
+      .task-item:active { background: #fafafa; }
+      .task-item.reminder { background: #fffbf5; }
+      .task-item.reminder .task-num em { color: #ea580c; }
+      .task-sub { display: block; font-size: 11px; color: #b45309; margin-top: 4px; font-weight: 400; }
+      .task-num { font-size: 14px; color: #333; flex: 1; line-height: 1.5; }
+      .task-num em { color: var(--red); font-style: normal; font-weight: 500; }
+      .task-status {
+        width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: 12px;
+      }
+      .task-status.pending { background: #f3f4f6; color: #9ca3af; }
+      .task-status.done { background: #d1fae5; color: #047857; }
+
+      .chat-footer {
+        flex-shrink: 0;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 8px 12px calc(8px + var(--safe-b));
+      }
+      .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+      .quick-chip {
+        padding: 5px 12px; border-radius: 999px; border: none;
+        background: var(--red-light); color: var(--red); font-size: 12px; cursor: pointer;
+      }
+      .input-row {
+        display: flex; align-items: flex-end; gap: 8px;
+        background: #f5f5f5; border-radius: 12px; padding: 8px 10px;
+      }
+      .input-row textarea {
+        flex: 1; border: none; background: none; font-size: 14px;
+        resize: none; outline: none; max-height: 80px; font-family: inherit;
+      }
+      .input-btn {
+        width: 32px; height: 32px; border: none; background: none;
+        font-size: 18px; cursor: pointer; color: #999;
+      }
+      .input-btn.send { color: var(--red); font-size: 20px; }
+
+      .tabbar {
+        display: flex; background: #fff; border-top: 1px solid var(--border);
+        padding-bottom: var(--safe-b);
+      }
+      .tab {
+        flex: 1; text-align: center; padding: 6px 0 8px;
+        font-size: 10px; color: #999; cursor: pointer;
+      }
+      .tab.active { color: var(--red); }
+      .tab-icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+      .toast {
+        position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%);
+        background: rgba(0,0,0,0.78); color: #fff; padding: 10px 18px;
+        border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0;
+        transition: opacity 0.3s; pointer-events: none;
+      }
+      .toast.show { opacity: 1; }
+
+      .dev-nav {
+        position: fixed; right: 8px; top: 50px; z-index: 200;
+        width: 140px; background: #1f2937; color: #fff; border-radius: 8px;
+        font-size: 10px; padding: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      }
+      .dev-nav-title { color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
+      .dev-nav-item { padding: 5px 6px; border-radius: 4px; cursor: pointer; margin-bottom: 3px; }
+      .dev-nav-item:hover { background: #374151; }
+
+      .reminder-overlay {
+        position: fixed; inset: 0; z-index: 300;
+        background: rgba(0,0,0,0.45); display: none;
+        align-items: flex-end; justify-content: center;
+      }
+      .reminder-overlay.show { display: flex; }
+      .reminder-sheet {
+        width: 100%; max-width: 430px; background: #fff;
+        border-radius: 16px 16px 0 0; padding: 20px 16px calc(20px + var(--safe-b));
+        max-height: 85vh; overflow-y: auto;
+      }
+      .reminder-sheet-title { font-size: 17px; font-weight: 600; color: #111; margin-bottom: 4px; }
+      .reminder-sheet-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+      .reminder-info-row {
+        display: flex; padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+        font-size: 13px; line-height: 1.5;
+      }
+      .reminder-info-row:last-of-type { border-bottom: none; }
+      .reminder-info-label { width: 88px; flex-shrink: 0; color: #888; }
+      .reminder-info-value { flex: 1; color: #333; font-weight: 500; }
+      .reminder-sheet-tip {
+        margin: 14px 0; padding: 12px; background: #fff7ed; border-radius: 8px;
+        font-size: 12px; line-height: 1.65; color: #9a3412;
+      }
+      .reminder-sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+      .reminder-sheet-actions button {
+        flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+      }
+      .btn-reminder-primary { border: none; background: var(--red); color: #fff; }
+      .btn-reminder-secondary { border: 1px solid #ddd; background: #fff; color: #666; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <button class="topbar-btn">☰</button>
+      <div class="topbar-title" id="session-title">第2次随访会话</div>
+      <button class="topbar-btn">💬+</button>
+    </header>
+    <div class="period-banner" id="period-banner">
+      随访周期内 · 仅此一个会话 · 请在此完成随访任务
+    </div>
+
+    <div class="chat-area" id="chat-area">
+      <div class="bot-row">
+        <div class="bot-avatar">智</div>
+        <div class="bot-content">
+          <div class="bot-name">小智（医生的小助手）</div>
+          <div class="bot-bubble">
+            很高兴见到您！您最近皮肤情况如何？<br><br>
+            本次为<strong>第2次随访</strong>，请在下方<strong>任务列表</strong>中完成医生安排的问卷。填写后将自动同步至医生随访表。
+          </div>
+          <div class="followup-reminder-card" id="followup-reminder-card">
+            <div class="followup-reminder-card-title"><span>🏥</span>门诊复诊提醒</div>
+            <p>您好，根据医生为您制定的随访计划，<span class="highlight" id="card-days-left">距离建议复诊还有 3 天</span>。</p>
+            <p>请于 <span class="highlight" id="card-visit-date">—</span> 前往 <span class="highlight" id="card-hospital">市第一人民医院 · 皮肤科门诊</span> 复诊。</p>
+            <ul>
+              <li>请携带身份证、既往病历与近期检查报告</li>
+              <li>如需改期，请提前联系您的主治医生</li>
+              <li>完成下方「复诊提醒确认」任务，便于医生了解您的到诊安排</li>
+            </ul>
+            <button type="button" class="reminder-confirm-btn" id="card-confirm-btn" onclick="openReminderSheet()">查看详情并确认</button>
+          </div>
+          <div class="task-card" id="task-card">
+            <div class="task-card-head">
+              <span class="task-card-title">任务列表</span>
+              <span class="task-card-date" id="task-date"></span>
+            </div>
+            <div id="task-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="chat-footer">
+      <div class="quick-chips">
+        <button class="quick-chip" onclick="openQuestionnaire('UCT')">UCT</button>
+        <button class="quick-chip" onclick="openQuestionnaire('UAS7')">UAS7</button>
+        <button class="quick-chip" onclick="openQuestionnaire('CU-Q2oL')">CU-Q2oL</button>
+        <button class="quick-chip" onclick="openQuestionnaire('BPDAI')">BPDAI</button>
+        <button class="quick-chip" onclick="openQuestionnaire('SCORAD')">SCORAD</button>
+        <button class="quick-chip" onclick="openQuestionnaire('EASI')">EASI</button>
+        <button class="quick-chip" onclick="openQuestionnaire('随访问卷')">随访问卷</button>
+        <button class="quick-chip" onclick="openReminderSheet()">复诊提醒</button>
+        <button class="quick-chip" onclick="openQuestionnaire('用药记录')">用药记录</button>
+      </div>
+      <div class="input-row">
+        <button class="input-btn" onclick="showToast('上传图片/文件')">📎</button>
+        <textarea rows="1" placeholder="给小智发送消息" id="chat-input"></textarea>
+        <button class="input-btn send" onclick="sendMsg()">➤</button>
+      </div>
+    </footer>
+
+    <nav class="tabbar">
+      <div class="tab"><span class="tab-icon">🏠</span>首页</div>
+      <div class="tab"><span class="tab-icon">▦</span>健康档案</div>
+      <div class="tab active"><span class="tab-icon">🔍</span>我的小智</div>
+      <div class="tab"><span class="tab-icon">🩺</span>我的医生</div>
+      <div class="tab"><span class="tab-icon">👤</span>个人中心</div>
+    </nav>
+
+    <div class="dev-nav">
+      <div class="dev-nav-title">⋮⋮ 患者端原型</div>
+      <div class="dev-nav-item" onclick="window.open('index.html','_blank')">💻 医生PC端</div>
+      <div class="dev-nav-item" onclick="window.open('mobile.html','_blank')">📱 医生移动端</div>
+      <div class="dev-nav-item" onclick="completeTask(0)">模拟完成问卷</div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="reminder-overlay" id="reminder-overlay" onclick="closeReminderSheet(event)">
+      <div class="reminder-sheet" onclick="event.stopPropagation()">
+        <div class="reminder-sheet-title">复诊提醒确认</div>
+        <div class="reminder-sheet-sub">请核对以下复诊信息，确认后将同步至医生随访表</div>
+        <div class="reminder-info-row"><span class="reminder-info-label">建议日期</span><span class="reminder-info-value" id="sheet-date">—</span></div>
+        <div class="reminder-info-row"><span class="reminder-info-label">就诊地点</span><span class="reminder-info-value" id="sheet-place">市第一人民医院 · 皮肤科门诊</span></div>
+        <div class="reminder-info-row"><span class="reminder-info-label">主治医生</span><span class="reminder-info-value" id="sheet-doctor">李医生</span></div>
+        <div class="reminder-info-row"><span class="reminder-info-label">剩余天数</span><span class="reminder-info-value" id="sheet-days">还有 3 天</span></div>
+        <div class="reminder-sheet-tip">
+          <strong>温馨提示：</strong>您的复诊日子快到了，请按时前往门诊复诊。若已预约请按预约时间到院；如无法按时到诊，请尽快联系医生改期，以免影响随访进度。
+        </div>
+        <div class="reminder-sheet-actions">
+          <button type="button" class="btn-reminder-secondary" onclick="closeReminderSheet()">稍后确认</button>
+          <button type="button" class="btn-reminder-primary" id="sheet-confirm-btn" onclick="confirmReminder()">我知道了，按时复诊</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /** 复诊提醒演示数据（正式版由随访设置/计划日期下发） */
+      const FOLLOWUP_REMINDER = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 3);
+        const visitDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        return {
+          visitDate,
+          hospital: "市第一人民医院 · 皮肤科门诊",
+          doctor: "李医生",
+          department: "皮肤科门诊",
+        };
+      })();
+
+      const TASKS = [
+        { text: "填写问卷：", link: "任务提醒-问卷-UCT", done: true },
+        { text: "填写问卷：", link: "BPDAI", done: false },
+        { text: "填写问卷：", link: "SCORAD", done: false },
+        { text: "填写：", link: "用药记录", done: false },
+        { text: "填写问卷：", link: "随访问卷", done: false },
+        {
+          type: "reminder",
+          text: "复诊提醒：",
+          link: "复诊提醒确认",
+          sub: "请于建议日期前往门诊复诊",
+          done: false,
+        },
+      ];
+
+      function formatVisitDate(dateStr) {
+        const d = new Date(dateStr + "T12:00:00");
+        const week = "日一二三四五六"[d.getDay()];
+        return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（周${week}）`;
+      }
+
+      function getDaysUntil(dateStr) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(dateStr + "T12:00:00");
+        target.setHours(0, 0, 0, 0);
+        return Math.round((target - today) / 86400000);
+      }
+
+      function initFollowupReminder() {
+        const days = getDaysUntil(FOLLOWUP_REMINDER.visitDate);
+        const dateFmt = formatVisitDate(FOLLOWUP_REMINDER.visitDate);
+        let daysText = "";
+        if (days > 0) daysText = `距离建议复诊还有 ${days} 天`;
+        else if (days === 0) daysText = "今天为建议复诊日";
+        else daysText = `建议复诊日已过 ${Math.abs(days)} 天，请尽快联系医生`;
+
+        document.getElementById("card-days-left").textContent = daysText;
+        document.getElementById("card-visit-date").textContent = dateFmt;
+        document.getElementById("card-hospital").textContent = FOLLOWUP_REMINDER.hospital;
+        document.getElementById("sheet-date").textContent = dateFmt;
+        document.getElementById("sheet-place").textContent = FOLLOWUP_REMINDER.hospital;
+        document.getElementById("sheet-doctor").textContent = FOLLOWUP_REMINDER.doctor;
+        document.getElementById("sheet-days").textContent =
+          days > 0 ? `还有 ${days} 天` : days === 0 ? "今天" : `已过期 ${Math.abs(days)} 天`;
+
+        const reminderTask = TASKS.find(t => t.type === "reminder");
+        if (reminderTask) {
+          reminderTask.sub =
+            days > 0
+              ? `${dateFmt} · 还有 ${days} 天，请前往门诊复诊`
+              : days === 0
+                ? `${dateFmt} · 今天请前往门诊复诊`
+                : `${dateFmt} · 请尽快复诊或联系医生`;
+        }
+      }
+
+      function renderTasks() {
+        const d = new Date();
+        document.getElementById("task-date").textContent =
+          `${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} 周${"日一二三四五六"[d.getDay()]}`;
+        document.getElementById("task-list").innerHTML = TASKS.map((t, i) =>
+          `<div class="task-item ${t.done ? "done" : ""} ${t.type === "reminder" ? "reminder" : ""}" onclick="openTask(${i})">
+            <span class="task-num">${i+1}、${t.text}<em>${t.link}</em>${t.sub ? `<span class="task-sub">${t.sub}</span>` : ""}</span>
+            <span class="task-status ${t.done ? "done" : "pending"}">${t.done ? "✓" : "!"}</span>
+          </div>`
+        ).join("");
+        const btn = document.getElementById("card-confirm-btn");
+        const reminderDone = TASKS.find(t => t.type === "reminder")?.done;
+        if (btn) {
+          btn.textContent = reminderDone ? "已确认复诊安排" : "查看详情并确认";
+          btn.classList.toggle("done", !!reminderDone);
+          btn.disabled = !!reminderDone;
+        }
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2200);
+      }
+
+      function openTask(i) {
+        const t = TASKS[i];
+        if (t.done) { showToast("已完成：" + t.link); return; }
+        if (t.type === "reminder") {
+          openReminderSheet();
+          return;
+        }
+        openQuestionnaire(t.link);
+      }
+
+      function openReminderSheet() {
+        document.getElementById("reminder-overlay").classList.add("show");
+      }
+
+      function closeReminderSheet(e) {
+        if (e && e.target !== document.getElementById("reminder-overlay")) return;
+        document.getElementById("reminder-overlay").classList.remove("show");
+      }
+
+      function confirmReminder() {
+        const idx = TASKS.findIndex(t => t.type === "reminder");
+        if (idx >= 0) {
+          TASKS[idx].done = true;
+          renderTasks();
+        }
+        closeReminderSheet();
+        showToast("已确认复诊安排 · 将按时前往门诊复诊 · 已同步至医生随访表");
+      }
+
+      function openQuestionnaire(name) {
+        if (name.includes("复诊")) {
+          openReminderSheet();
+          return;
+        }
+        showToast(`打开问卷：${name}`);
+        setTimeout(() => {
+          const idx = TASKS.findIndex(t => t.link.includes(name) || name.includes(t.link.split("-").pop()));
+          if (idx >= 0) completeTask(idx);
+        }, 800);
+      }
+
+      function completeTask(i) {
+        TASKS[i].done = true;
+        renderTasks();
+        const now = new Date();
+        const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+        showToast(`已提交 · ${ts} · 数据已同步至医生随访表`);
+      }
+
+      function sendMsg() {
+        const v = document.getElementById("chat-input").value.trim();
+        if (!v) return;
+        showToast("小智：已记录，相关信息将同步至随访表");
+        document.getElementById("chat-input").value = "";
+      }
+
+      initFollowupReminder();
+      renderTasks();
+    </script>
+  </body>
+</html>
